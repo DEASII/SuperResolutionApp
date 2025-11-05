@@ -4,7 +4,7 @@ from torchvision.transforms.functional import to_tensor, to_pil_image
 from PIL import Image
 import os
 import urllib.request
-from realesrgan.archs.srvgg_arch import SRVGGNetCompact
+from realesrgan.archs.rrdbnet_arch import RRDBNet
 
 # ==========================
 # โหลดโมเดล ESRGAN (x4)
@@ -19,18 +19,24 @@ if not os.path.exists(MODEL_PATH):
 device = "cpu"
 
 # สร้างโมเดลโครงสร้าง SRVGGNetCompact (ตาม RealESRGAN)
-model = SRVGGNetCompact(
+model = RRDBNet(
     num_in_ch=3,
     num_out_ch=3,
     num_feat=64,
-    num_conv=32,
-    upscale=4,
-    act_type='prelu'
+    num_block=23,
+    num_grow_ch=32,
+    scale=4
 )
 
 # โหลด weights
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+loadnet = torch.load(MODEL_PATH, map_location=device)
+if 'params_ema' in loadnet:
+    keyname = 'params_ema'
+else:
+    keyname = 'params'
+model.load_state_dict(loadnet[keyname], strict=False)
 model.eval()
+
 
 # ==========================
 # Streamlit UI
