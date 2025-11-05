@@ -1,32 +1,41 @@
 import streamlit as st
 import torch
 from torchvision.transforms.functional import to_tensor, to_pil_image
-import gdown
 from PIL import Image
 import os
-import cv2
-import numpy as np
+import urllib.request
+from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
 # ==========================
 # โหลดโมเดล ESRGAN (x4)
 # ==========================
-MODEL_PATH = "models/esrgan/RealESRGAN_x4plus.pth"
+MODEL_PATH = "RealESRGAN_x4plus.pth"
 if not os.path.exists(MODEL_PATH):
-    st.write("📥 Downloading ESRGAN model...")
-    gdown.download(
-        "https://drive.google.com/uc?id=1R1b4Scb0v8lzH_QKUXtW-Cm-0MRRf3wU",
-        MODEL_PATH,
-        quiet=False
-    )
+    st.write("📥 Downloading ESRGAN model from GitHub...")
+    url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+    urllib.request.urlretrieve(url, MODEL_PATH)
+    st.success("✅ Download complete!")
 
 device = "cpu"
-model = torch.load(MODEL_PATH, map_location=device)
+
+# สร้างโมเดลโครงสร้าง SRVGGNetCompact (ตาม RealESRGAN)
+model = SRVGGNetCompact(
+    num_in_ch=3,
+    num_out_ch=3,
+    num_feat=64,
+    num_conv=32,
+    upscale=4,
+    act_type='prelu'
+)
+
+# โหลด weights
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
 # ==========================
 # Streamlit UI
 # ==========================
-st.title("🪄 Image Super Resolution (CPU - Streamlit Cloud Ready)")
+st.title("🪄 Image Super Resolution (CPU - ESRGAN)")
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
