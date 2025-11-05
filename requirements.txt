@@ -1,8 +1,10 @@
+streamlit
 torch
 torchvision
-streamlit
-pillow
 opencv-python
+Pillow
+realesrgan==0.3.0
+basicsr
+gfpgan
+tqdm
 numpy
-matplotlib
-scikit-image

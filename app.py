@@ -1,23 +1,25 @@
 import sys
 import torch
 from PIL import Image
-from realesrgan.archs.srvgg_arch import SRVGGNetCompact as RealESRGAN
+from realesrgan import RealESRGANer
+from basicsr.archs.rrdbnet_arch import RRDBNet
+import cv2
 
 
 def upscale_image(input_path, output_path, scale=4):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"🚀 Using device: {device}")
 
-    model = RRDBNet(
-        num_in_ch=3,
-        num_out_ch=3,
-        num_feat=64,
-        num_block=23,
-        num_grow_ch=32,
-        scale=4
+    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+    upsampler = RealESRGANer(
+        scale=4,
+        model_path='weights/RealESRGAN_x4plus.pth',
+        model=model,
+        tile=0,
+        tile_pad=10,
+        pre_pad=0,
+        half=True
     )
-    model.load_weights('RealESRGAN_x4plus.pth')
-
     print(f"📂 Loading image: {input_path}")
     img = Image.open(input_path).convert('RGB')
 
