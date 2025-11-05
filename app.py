@@ -10,7 +10,7 @@ import numpy as np
 # ==========================
 # โหลดโมเดล ESRGAN (x4)
 # ==========================
-MODEL_PATH = "RealESRGAN_x4plus.pth"
+MODEL_PATH = "models/esrgan/RealESRGAN_x4plus.pth"
 if not os.path.exists(MODEL_PATH):
     st.write("📥 Downloading ESRGAN model...")
     gdown.download(
