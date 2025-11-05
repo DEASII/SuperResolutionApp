@@ -1,41 +1,45 @@
-import sys
+import streamlit as st
 import torch
+from torchvision.transforms.functional import to_tensor, to_pil_image
+import gdown
 from PIL import Image
-from realesrgan import RealESRGANer
-from basicsr.archs.rrdbnet_arch import RRDBNet
+import os
 import cv2
+import numpy as np
 
-
-def upscale_image(input_path, output_path, scale=4):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"🚀 Using device: {device}")
-
-    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-    upsampler = RealESRGANer(
-        scale=4,
-        model_path='weights/RealESRGAN_x4plus.pth',
-        model=model,
-        tile=0,
-        tile_pad=10,
-        pre_pad=0,
-        half=True
+# ==========================
+# โหลดโมเดล ESRGAN (x4)
+# ==========================
+MODEL_PATH = "RealESRGAN_x4plus.pth"
+if not os.path.exists(MODEL_PATH):
+    st.write("📥 Downloading ESRGAN model...")
+    gdown.download(
+        "https://drive.google.com/uc?id=1R1b4Scb0v8lzH_QKUXtW-Cm-0MRRf3wU",
+        MODEL_PATH,
+        quiet=False
     )
-    print(f"📂 Loading image: {input_path}")
-    img = Image.open(input_path).convert('RGB')
 
-    print("🔄 Upscaling in progress...")
-    sr_image = model.predict(img)
+device = "cpu"
+model = torch.load(MODEL_PATH, map_location=device)
+model.eval()
 
-    sr_image.save(output_path)
-    print(f"✅ Done! Saved to: {output_path}")
+# ==========================
+# Streamlit UI
+# ==========================
+st.title("🪄 Image Super Resolution (CPU - Streamlit Cloud Ready)")
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python app.py <input_path> <output_path> [scale]")
-        sys.exit(1)
+if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Original", use_container_width=True)
 
-    input_path = sys.argv[1]
-    output_path = sys.argv[2]
-    scale = int(sys.argv[3]) if len(sys.argv) > 3 else 4
+    if st.button("Enhance Image"):
+        with st.spinner("Processing..."):
+            img_tensor = to_tensor(image).unsqueeze(0)
+            with torch.no_grad():
+                output = model(img_tensor)
+            out_img = to_pil_image(output.squeeze(0).clamp(0, 1))
 
-    upscale_image(input_path, output_path, scale)
+        st.image(out_img, caption="Enhanced Image (x4)", use_container_width=True)
+        out_img.save("output.png")
+        st.download_button("📥 Download Result", data=open("output.png", "rb"), file_name="output.png")
